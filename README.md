@@ -2,41 +2,46 @@
 
 A full-stack reservation platform for managing heritage site bookings with secure authentication, role-based access control, real-time capacity monitoring, concurrency-safe reservations, and an admin dashboard.
 
-## Features
+---
 
-### Authentication & Authorization
+# Features
+
+## Authentication & Authorization
 
 - JWT-based authentication
 - Secure password hashing using bcrypt
 - Role-based access control (Admin/User)
-- Protected routes for admin operations
+- Protected admin routes
+- Protected reservation endpoints
 
-### Reservation Management
+## Reservation Management
 
-- Browse heritage sites and available time slots
+- Browse heritage sites
+- View available time slots
 - Create reservations
 - Cancel reservations
 - Real-time ticket availability updates
 - Prevention of overbooking
 
-### Concurrency Handling
+## Concurrency Handling
 
 - BullMQ queue for reservation processing
 - Redis-backed job queue
 - MongoDB transactions for atomic reservation operations
-- Tested under concurrent load to prevent race conditions
+- Concurrency tested under load
+- Race condition prevention
 
-### Admin Dashboard
+## Admin Dashboard
 
-- View all site capacities
-- Real-time capacity updates using Socket.IO
-- Monitor ticket availability across all sites
+- View capacities across all heritage sites
+- Real-time updates using Socket.IO
+- Monitor bookings and remaining inventory
 
-### Responsive UI
+## Responsive UI
 
-- Mobile-friendly design
-- Responsive dashboard
-- Responsive booking interface
+- Mobile-friendly booking page
+- Responsive admin dashboard
+- Works across desktop, tablet, and mobile devices
 
 ---
 
@@ -66,25 +71,62 @@ A full-stack reservation platform for managing heritage site bookings with secur
 
 ---
 
-# System Architecture
+# Architecture
 
+```text
+Frontend (React + Socket.IO)
+        |
+        v
+Backend (Express + JWT)
+        |
+        +----------------------+
+        |                      |
+        v                      v
+     BullMQ                 MongoDB
+        |                      |
+        v                      |
+      Redis                    |
+        |                      |
+        +----------------------+
+                 |
+                 v
+          Socket.IO Events
+                 |
+                 v
+        Admin Dashboard
+```
+
+---
+
+# System Workflow
+
+```text
 User Request
-↓
+     |
+     v
 Express API
-↓
+     |
+     v
 BullMQ Queue
-↓
+     |
+     v
 Redis
-↓
+     |
+     v
 Booking Worker
-↓
+     |
+     v
 MongoDB Transaction
-↓
+     |
+     v
 Reservation Created
-↓
+     |
+     v
 Socket.IO Event
-↓
+     |
+     v
 Admin Dashboard Updates
+```
 
 ---
 
@@ -94,25 +136,33 @@ After running the seed script:
 
 ## Admin Account
 
-Email:
-[admin@test.com](mailto:admin@test.com)
+Email: [admin@test.com](mailto:admin@test.com)
 
-Password:
-123456
+Password: 123456
 
-Role:
-admin
+Role: admin
+
+### Admin Access
+
+- Capacity Dashboard
+- Real-Time Monitoring
+
+---
 
 ## User Account
 
-Email:
-[user@test.com](mailto:user@test.com)
+Email: [user@test.com](mailto:user@test.com)
 
-Password:
-123456
+Password: 123456
 
-Role:
-user
+Role: user
+
+### User Access
+
+- Browse Sites
+- View Slots
+- Create Reservations
+- Cancel Reservations
 
 ---
 
@@ -130,7 +180,7 @@ user
 ## Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/paritoshXsingh/webisdom-reservation-challenge.git
 cd webisdom_assignment
 ```
 
@@ -169,21 +219,19 @@ npm install
 
 ## Start Redis
 
-Ubuntu:
-
 ```bash
 redis-server
 ```
 
-Verify:
+Verify Redis is running:
 
 ```bash
 redis-cli ping
 ```
 
-Expected:
+Expected output:
 
-```bash
+```text
 PONG
 ```
 
@@ -193,19 +241,19 @@ PONG
 
 MongoDB transactions require a replica set.
 
-Start MongoDB with replica set enabled:
+Start MongoDB:
 
 ```bash
 mongod --replSet rs0
 ```
 
-Open mongosh:
+Open Mongo Shell:
 
 ```bash
 mongosh
 ```
 
-Initialize replica set:
+Initialize Replica Set:
 
 ```javascript
 rs.initiate();
@@ -219,8 +267,8 @@ rs.status();
 
 Expected:
 
-```javascript
-stateStr: "PRIMARY";
+```text
+stateStr: "PRIMARY"
 ```
 
 ---
@@ -333,14 +381,13 @@ The reservation workflow uses MongoDB transactions:
 ```typescript
 session.startTransaction()
 ...
-session.commitTransaction()
+await session.commitTransaction()
 ```
 
 MongoDB transactions require:
 
 - Replica Set
-  or
-- Sharded Cluster
+- or Sharded Cluster
 
 Therefore local development uses a replica set configuration.
 
@@ -365,19 +412,18 @@ The Docker configuration is intended to demonstrate:
 - Service orchestration
 - Redis integration
 - BullMQ integration
-- Frontend and backend deployment
+- Frontend deployment
+- Backend deployment
 
-without additional replica set initialization complexity.
+without introducing replica-set initialization complexity.
 
 ---
 
 # Enabling Transaction Support In Docker
 
-To enable transaction support inside Docker:
+If transaction support is required inside Docker:
 
 ### Update docker-compose.yml
-
-Replace Mongo service with:
 
 ```yaml
 mongo:
@@ -425,13 +471,16 @@ After these changes, MongoDB transactions will function inside Docker exactly as
 
 # Concurrency Testing
 
-The system was tested using concurrent reservation requests.
+Run:
 
-Example result:
+```bash
+npm run test:concurrency
+```
+
+Example output:
 
 ```text
-Success: 50
-Failed: 50
+{ success: 50, failed: 50 }
 ```
 
 Available tickets:
@@ -444,9 +493,10 @@ No overselling occurred.
 
 This validates:
 
-- Transaction correctness
 - Queue processing
+- Transaction correctness
 - Concurrency safety
+- Inventory protection
 
 ---
 
@@ -512,30 +562,80 @@ GET /api/admin/capacity
 
 # Security Features
 
-- JWT Authentication
-- Password Hashing using bcrypt
-- Role-based authorization
-- Input validation
-- Protected admin routes
-- Secure reservation processing
+## Authentication
+
+- JWT-based authentication
+- Password hashing using bcrypt
+
+## Authorization
+
+- Role-based access control
+- Protected admin endpoints
+
+## IDOR Prevention
+
+- Users can only cancel their own reservations
+- Reservation ownership is verified before deletion
+
+## Race Condition Prevention
+
+- BullMQ serializes reservation processing
+- MongoDB transactions ensure atomic updates
+- Prevents overselling during concurrent requests
+
+## Input Validation
+
+- Request payload validation
+- Invalid requests rejected before processing
+
+---
+
+# Project Structure
+
+```text
+webisdom_assignment/
+│
+├── client/
+│   ├── src/
+│   ├── public/
+│   └── Dockerfile
+│
+├── server/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── models/
+│   │   ├── queues/
+│   │   ├── routes/
+│   │   ├── seed/
+│   │   ├── services/
+│   │   ├── sockets/
+│   │   └── tests/
+│   │
+│   └── Dockerfile
+│
+├── docker-compose.yml
+└── README.md
+```
 
 ---
 
 # Future Improvements
 
-- Payment Integration
-- Email Notifications
-- Reservation History
-- Advanced Analytics Dashboard
-- Multi-day Slot Management
-- Docker Replica Set Automation
+- Payment integration
+- Reservation history page
+- Email notifications
+- Advanced analytics dashboard
+- Multi-day slot management
+- Automated Docker replica-set initialization
 
 ---
 
 # Author
 
-Paritosh Singh
+**Paritosh Singh**
 
 Full Stack Developer
 
-Built as part of the Webisdom Backend Assignment.
+Built as part of the Webisdom Full Stack Engineering Assignment.
