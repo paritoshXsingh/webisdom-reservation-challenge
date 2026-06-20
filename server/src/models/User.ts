@@ -51,4 +51,11 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+userSchema.set("toJSON", {
+  transform: (_, ret: any) => {
+    delete ret.password;
+    return ret;
+  },
+});
+
 export default mongoose.model<IUser>("User", userSchema);
