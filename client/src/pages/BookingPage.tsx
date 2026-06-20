@@ -16,50 +16,69 @@ const BookingPage = () => {
   const [sites, setSites] = useState<Site[]>([]);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
 
-  const [selectedSite, setSelectedSite] =
-    useState("");
+  const [selectedSite, setSelectedSite] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
 
-  const [selectedSlot, setSelectedSlot] =
-    useState("");
+  const [quantity, setQuantity] = useState(1);
 
-  const [quantity, setQuantity] =
-    useState(1);
+  const [loading, setLoading] = useState(false);
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<
+    "success" | "error" | ""
+  >("");
 
   useEffect(() => {
     fetchSites();
   }, []);
 
   const fetchSites = async () => {
-    const res =
-      await api.get("/sites");
-
-    setSites(res.data.data);
+    try {
+      const res = await api.get("/sites");
+      setSites(res.data.data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const fetchSlots = async (
-    siteId: string
-  ) => {
-    const res =
-      await api.get(
+  const fetchSlots = async (siteId: string) => {
+    try {
+      const res = await api.get(
         `/sites/${siteId}/slots`
       );
 
-    setSlots(res.data.data);
+      setSlots(res.data.data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleSiteChange = (
     siteId: string
   ) => {
     setSelectedSite(siteId);
-
+    setSelectedSlot("");
     fetchSlots(siteId);
   };
 
   const handleBooking = async () => {
+    if (!selectedSlot) {
+      setMessage("Please select a slot");
+      setMessageType("error");
+      return;
+    }
+
+    if (quantity <= 0) {
+      setMessage(
+        "Quantity must be greater than 0"
+      );
+      setMessageType("error");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       await api.post(
         "/reservations",
         {
@@ -71,26 +90,45 @@ const BookingPage = () => {
       setMessage(
         "Reservation Successful"
       );
+      setMessageType("success");
 
       fetchSlots(selectedSite);
     } catch (error: any) {
       setMessage(
-        error.response?.data
-          ?.message ||
+        error.response?.data?.message ||
           "Booking Failed"
       );
+
+      setMessageType("error");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const logout = () => {
+    localStorage.clear();
+    window.location.reload();
   };
 
   return (
     <div className="min-h-screen bg-slate-100 p-4">
       <div className="max-w-xl mx-auto bg-white p-6 rounded-lg shadow">
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={logout}
+            className="border px-4 py-2 rounded hover:bg-slate-100"
+          >
+            Logout
+          </button>
+        </div>
+
         <h1 className="text-3xl font-bold mb-6">
           Book Tickets
         </h1>
 
         <select
-          className="w-full border p-2 mb-4"
+          className="w-full border p-2 mb-4 rounded"
+          value={selectedSite}
           onChange={(e) =>
             handleSiteChange(
               e.target.value
@@ -112,7 +150,8 @@ const BookingPage = () => {
         </select>
 
         <select
-          className="w-full border p-2 mb-4"
+          className="w-full border p-2 mb-4 rounded"
+          value={selectedSlot}
           onChange={(e) =>
             setSelectedSlot(
               e.target.value
@@ -128,12 +167,11 @@ const BookingPage = () => {
               key={slot._id}
               value={slot._id}
             >
-              {slot.startTime}
-              {" - "}
+              {slot.startTime} -{" "}
               {
                 slot.availableTickets
               }{" "}
-              left
+              tickets left
             </option>
           ))}
         </select>
@@ -149,18 +187,28 @@ const BookingPage = () => {
               )
             )
           }
-          className="w-full border p-2 mb-4"
+          className="w-full border p-2 mb-4 rounded"
         />
 
         <button
           onClick={handleBooking}
-          className="w-full bg-black text-white p-2 rounded"
+          disabled={loading}
+          className="w-full bg-black text-white p-2 rounded disabled:opacity-50"
         >
-          Book Ticket
+          {loading
+            ? "Booking..."
+            : "Book Ticket"}
         </button>
 
         {message && (
-          <p className="mt-4">
+          <p
+            className={`mt-4 text-sm ${
+              messageType ===
+              "success"
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+          >
             {message}
           </p>
         )}
