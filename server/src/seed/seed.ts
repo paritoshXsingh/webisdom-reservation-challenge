@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
 
 import Site from "../models/Site";
 import TimeSlot from "../models/TimeSlot";
+import User from "../models/User";
 
 dotenv.config();
 
@@ -14,10 +16,30 @@ const seed = async () => {
 
     console.log("Connected to MongoDB");
 
+    await User.deleteMany({});
     await Site.deleteMany({});
     await TimeSlot.deleteMany({});
 
     console.log("Old data removed");
+
+    const hashedPassword = await bcrypt.hash("123456", 10);
+
+    await User.insertMany([
+      {
+        name: "Admin User",
+        email: "admin@test.com",
+        password: hashedPassword,
+        role: "admin",
+      },
+      {
+        name: "Test User",
+        email: "user@test.com",
+        password: hashedPassword,
+        role: "user",
+      },
+    ]);
+
+    console.log("Users seeded");
 
     const sites = await Site.insertMany([
       {
@@ -58,18 +80,19 @@ const seed = async () => {
           startTime: "14:00",
           capacity: 50,
           availableTickets: 50,
-        }
+        },
       );
     }
 
     await TimeSlot.insertMany(slots);
 
-    console.log("Seed data inserted");
+    console.log("Sites and slots seeded");
+    console.log("Admin: admin@test.com / 123456");
+    console.log("User : user@test.com / 123456");
 
     process.exit(0);
   } catch (error) {
     console.error(error);
-
     process.exit(1);
   }
 };
