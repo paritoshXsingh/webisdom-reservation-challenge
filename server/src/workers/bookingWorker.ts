@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 import mongoose from "mongoose";
+import { getIO } from "../sockets/socket";
 
 import { redisConnection } from "../config/redis";
 
@@ -49,6 +50,10 @@ export const bookingWorker = new Worker(
       );
 
       await session.commitTransaction();
+
+      getIO().emit("capacityUpdated", {
+        slotId,
+      });
 
       return {
         success: true,

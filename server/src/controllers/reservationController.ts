@@ -1,4 +1,5 @@
 import { Response } from "express";
+import { getIO } from "../sockets/socket";
 
 import { bookingQueue } from "../queues/bookingQueue";
 import { bookingQueueEvents } from "../queues/queueEvents";
@@ -77,6 +78,10 @@ export const cancelReservation = async (req: AuthRequest, res: Response) => {
     });
 
     await session.commitTransaction();
+
+    getIO().emit("capacityUpdated", {
+      slotId: reservation.slotId,
+    });
 
     return res.status(200).json({
       success: true,

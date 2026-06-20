@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import http from "http";
+import { initSocket } from "./sockets/socket";
 import helmet from "helmet";
 import morgan from "morgan";
 import authRoutes from "./routes/authRoutes";
@@ -37,7 +39,11 @@ app.get("/health", (_, res) => {
 const startServer = async () => {
   await connectDB();
 
-  app.listen(env.PORT, () => {
+  const httpServer = http.createServer(app);
+
+  initSocket(httpServer);
+
+  httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
   });
 };
