@@ -4,6 +4,9 @@ import helmet from "helmet";
 import morgan from "morgan";
 import authRoutes from "./routes/authRoutes";
 import siteRoutes from "./routes/siteRoutes";
+import reservationRoutes from "./routes/reservationRoutes";
+
+import "./workers/bookingWorker";
 
 import { connectDB } from "./config/db";
 import { env } from "./config/env";
@@ -20,6 +23,7 @@ app.use(morgan("dev"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/sites", siteRoutes);
+app.use("/api/reservations", reservationRoutes);
 
 app.get("/health", (_, res) => {
   res.status(200).json({
