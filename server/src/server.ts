@@ -5,6 +5,7 @@ import morgan from "morgan";
 import authRoutes from "./routes/authRoutes";
 import siteRoutes from "./routes/siteRoutes";
 import reservationRoutes from "./routes/reservationRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 import "./workers/bookingWorker";
 
@@ -24,6 +25,7 @@ app.use(morgan("dev"));
 app.use("/api/auth", authRoutes);
 app.use("/api/sites", siteRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/health", (_, res) => {
   res.status(200).json({
